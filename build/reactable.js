@@ -221,8 +221,8 @@
 
     var Td = exports.Td = React.createClass({displayName: 'Td',
         handleClick: function(e){
-            if (typeof this.props.handleClick !== 'undefined') {
-                return this.props.handleClick(e, this);
+            if (typeof this.props.column.handleClick !== 'undefined') {
+                return this.props.column.handleClick(e, this);
             }
         },
         render: function() {
