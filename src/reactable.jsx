@@ -225,6 +225,22 @@
                 return this.props.column.handleClick(e, this);
             }
         },
+        processData: function(data){
+            // Let the user handle their own formatting if they want
+            if (typeof(this.props.column.callback) !== 'undefined') {
+                return this.props.column.callback(data);
+            }
+            // If no callback, format numbers and boolean correctly in a pretty way
+            var dataType = typeof(data);
+            if (dataType === 'boolean' || dataType === 'number') {
+                data = data.toString();
+                if (dataType === 'boolean') {
+                    // Proper case Boolean Strings
+                    data = data.charAt(0).toUpperCase() + data.substr(1).toLowerCase()
+                }
+            }
+            return data;
+        },
         render: function() {
             var tdProps = {
                 'data-column': this.props.column.key,
@@ -254,7 +270,7 @@
                 if (this.props.children instanceof Unsafe) {
                     tdProps.dangerouslySetInnerHTML = { __html: this.props.children.toString() };
                 } else {
-                    tdProps.children = data;
+                    tdProps.children = this.processData(data);
                 }
             }
 
