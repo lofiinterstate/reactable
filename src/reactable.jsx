@@ -113,6 +113,13 @@
         };
     }
 
+    // Add ProperCase functionality to string
+    if (!String.prototype.toProperCase){
+        String.prototype.toProperCase = function () {
+            return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+        };
+    }
+
     function Unsafe(content) {
         this.content = content;
     }
@@ -236,7 +243,7 @@
                 data = data.toString();
                 if (dataType === 'boolean') {
                     // Proper case Boolean Strings
-                    data = data.charAt(0).toUpperCase() + data.substr(1).toLowerCase()
+                    data = data.toProperCase();
                 }
             }
             return data;
@@ -321,6 +328,9 @@
         handleClickTh: function (column) {
             this.props.onSort(column.key);
         },
+        convertKeyToName: function(key) {
+            return key.replace(/[\_\-]/g, ' ').toProperCase();
+        },
         render: function() {
 
             // Declare the list of Ths
@@ -343,7 +353,7 @@
                     className: sortClass,
                     key: index,
                     onClick: this.handleClickTh.bind(this, column)
-                }, column.label));
+                }, column.label || this.convertKeyToName(column.key) ));
             }
 
             // Manually transfer props
