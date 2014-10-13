@@ -861,14 +861,14 @@
     /* */
     var UrlHelper = exports.UrlHelper = {
         getBaseUrl: function(){
-            if (!root.location.origin){
+            if (!root.location.origin) {
                 root.location.origin = root.location.protocol+"//"+root.location.host+"/";
             }
             return root.location.origin;
         },
         createUrl: function(urlRaw, params, dataIndex, dataKey) {
             var base = this.getBaseUrl();
-            if (base.substr(base.length - 1) !== '/'){
+            if (base.substr(base.length - 1) !== '/') {
                 base += '/';
             }
             if (_.isString(urlRaw)) {
@@ -881,7 +881,7 @@
                     base += value;
                 }
             }
-            if (base.substr(base.length - 1) !== '/'){
+            if (base.substr(base.length - 1) !== '/') {
                 base += '/';
             }
             if (!_.isUndefined(params)) {
@@ -937,12 +937,12 @@
         },
         handleClick: function(e) {
             if (typeof this.props.data.handleClick !== 'undefined') {
-                return this.props.data.handleClick.bind(this, this.props.row);
+                return this.props.data.handleClick(this.props.row);
             }
         },
         // Custom render function to just display the value for a column
         render: function() {
-            if (typeof(this.processData) !== 'undefined'){
+            if (typeof(this.processData) !== 'undefined') {
                 this.props.data.children = this.processData(this.props.data.children);
             }
             if (this.isVisible() == true) {
@@ -987,7 +987,7 @@
         componentWillMount: function() {
             this.initialize(this.props);
         },
-        componentWillReceiveProps: function(nextProps){
+        componentWillReceiveProps: function(nextProps) {
             this.initialize(nextProps);
         },
         initialize: function(props) {
@@ -1007,8 +1007,8 @@
             this.data.onClick = this.handleClick;
         },
         renderComponent: function() {
-            this.template.replace(/\[([\w\-\/]+)\]/gi, function(whole, match){
-                if (!_.isUndefined(this.buttons[match])){
+            this.template.replace(/\[([\w\-\/]+)\]/gi, function(whole, match) {
+                if (!_.isUndefined(this.buttons[match])) {
                     this.url.params['action'] = match;
                     var url = UrlHelper.createUrl(this.url.path, this.url.params, this.data.row.id, this.data.rowKey)
                     var buttonResult = (this.buttons[match](url, this.data.row));
@@ -1025,9 +1025,9 @@
     /* -- Data Column -- */
     var DataColumn = exports.DataColumn = React.createClass({
         mixins: [ColumnMixin],
-        processData: function(data){
+        processData: function(data) {
             var ndata = this.handleCallback(data);
-            if (!this.hasCallback()){
+            if (!this.hasCallback()) {
                 ndata = this.numberToString(data);
                 ndata = this.booleanToString(data);
             }
@@ -1043,7 +1043,7 @@
     /* -- Unsafe Column -- */
     var UnsafeColumn = exports.UnsafeColumn = React.createClass({
         mixins: [ColumnMixin],
-        processData: function(data){
+        processData: function(data) {
             return this.handleCallback(data);
         },
         renderComponent: function() {
@@ -1056,7 +1056,7 @@
     });
 /* */
     Td = exports.Td = React.createClass({
-        getColumnType: function(type, data){
+        getColumnType: function(type, data) {
             switch(type){
                 case 'ActionColumn':
                     return (<ActionColumn ref="column" data={data} row={this.props.row} />);
@@ -1066,16 +1066,11 @@
                     return (<DataColumn ref="column" data={data} row={this.props.row} />);
             }
         },
-        handleClick: function(e){
-            if (typeof this.props.data.handleClick !== 'undefined') {
-                return this.props.data.handleClick(e, this);
-            }
-        },
         render: function() {
             var columnProps = {
                 'data-column': this.props.column.key,
                 'row': this.props.row,
-                className: this.props.className,
+                className: this.props.className
             };
 
             // Attach any properties on the column to this Td object to allow things like custom event handlers
@@ -1085,7 +1080,7 @@
                 }
             }
             var data = this.props.data;
-            if (typeof(this.props.data) === 'undefined'){
+            if (typeof(this.props.data) === 'undefined') {
                 data = this.props.children;
             }
             if (typeof(this.props.children) !== 'undefined') {
