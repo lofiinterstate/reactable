@@ -12,9 +12,9 @@
         module.exports = factory(require('react'));
     } else {
         // Browser globals (root is window)
-        root.Reactable = factory(root.React);
+        root.Reactable = factory(root.React, root);
     }
-}(this, function (React) {
+}(this, function (React, root) {
     var exports = {};
 
     // Array.prototype.map polyfill - see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map#Polyfill
@@ -854,6 +854,291 @@
         childNode: true,
         data: true
     }
+
+
+
+    /* --- VisionLink Column Type Alterations Here --- */
+    /* */
+    var UrlHelper = exports.UrlHelper = {
+        getBaseUrl: function(){
+            if (!root.location.origin){
+                root.location.origin = root.location.protocol+"//"+root.location.host+"/";
+            }
+            return root.location.origin;
+        },
+        createUrl: function(urlRaw, params, dataIndex, dataKey) {
+            var base = this.getBaseUrl();
+            if (base.substr(base.length - 1) !== '/'){
+                base += '/';
+            }
+            if (_.isString(urlRaw)) {
+                base += urlRaw;
+            } else if (_.isObject(urlRaw)) {
+                var url = [urlRaw.feature, urlRaw.controller, urlRaw.action];
+                var value;
+                for (var index in url) {
+                    value = _.isUndefined(url[index]) ? '' : url[index] + '/';
+                    base += value;
+                }
+            }
+            if (base.substr(base.length - 1) !== '/'){
+                base += '/';
+            }
+            if (!_.isUndefined(params)) {
+                for (var key in params) {
+                    if (!_.isUndefined(params[key])) {
+                        base += key + '/' + params[key] + '/';
+                    }
+                }
+            }
+            if (!_.isUndefined(dataIndex)) {
+                base += (dataKey ? dataKey :'id')  + '/' + dataIndex + '/';
+            }
+            return base;
+        }
+    };
+    /* */
+    /**
+    * ColumnMixin
+    *
+    * Props:
+    *      visible: determimes if the column is visible (true)
+    */
+    var ColumnMixin = exports.ColumnMixin = {
+        getDefaultColumnProps: function() {
+            return {
+                'visible' : true,
+            };
+        },
+        isVisible: function () {
+            return (typeof this.props.visible === 'boolean') ? this.props.visible : true;
+        },
+        booleanToString: function(data) {
+            if (typeof(data) === 'boolean') {
+                data = data.toString().toProperCase();
+            }
+            return data;
+        },
+        numberToString: function(data) {
+            if (typeof(data) === 'number') {
+                data = data.toString();
+            }
+            return data;
+        },
+        hasCallback: function() {
+            return typeof(this.props.data.callback) === 'function';
+        },
+        handleCallback: function(data) {
+            // Let the user handle their own formatting
+            if (this.hasCallback()) {
+                data = this.props.data.callback(data);
+            }
+            return data;
+        },
+        handleClick: function(e) {
+            if (typeof this.props.data.handleClick !== 'undefined') {
+                return this.props.data.handleClick.bind(this, this.props.row);
+            }
+        },
+        // Custom render function to just display the value for a column
+        render: function() {
+            if (typeof(this.processData) !== 'undefined'){
+                this.props.data.children = this.processData(this.props.data.children);
+            }
+            if (this.isVisible() == true) {
+                return this.renderComponent();
+            } else {
+                return React.DOM.td();
+            }
+        }
+    };
+    /* */
+    var ButtonHelper = exports.ButtonHelper = {
+        makeButtonCallback: function (tooltip, glyph) {
+            return function (href, row) {
+                return React.DOM.a(
+                    {
+                        'title': tooltip,
+                        'href': href,
+                    },
+                    React.DOM.span({className: 'glyphicon glyphicon-' + glyph + ' glyphicon-style-padded'})
+                );
+            }
+        }
+    };
+
+    /* -- Action Column -- */
+    var ActionColumn = exports.ActionColumn = React.createClass({
+        mixins: [ColumnMixin],
+        getDefaultProps: function() {
+            return _.merge(
+                ColumnMixin.getDefaultColumnProps(),
+                {
+                    'template': '[view] [update] [delete]',
+                    'buttons':
+                    {
+                        view: ButtonHelper.makeButtonCallback('View', 'eye-open'),
+                        update: ButtonHelper.makeButtonCallback('Update', 'pencil'),
+                        delete: ButtonHelper.makeButtonCallback('Delete', 'trash')
+                    }
+                }
+            );
+        },
+        componentWillMount: function() {
+            this.initialize(this.props);
+        },
+        componentWillReceiveProps: function(nextProps){
+            this.initialize(nextProps);
+        },
+        initialize: function(props) {
+            this.data = props.data || [];
+            this.buttons = props.buttons;
+            if (!_.isUndefined(props.data.buttons)) {
+                this.buttons = props.data.buttons;
+            }
+            this.template = props.template;
+            if (!_.isUndefined(props.data.template)) {
+                this.template = props.data.template;
+            }
+            this.url = props.data.url || {};
+            this.url.path = _.has(props.data.url, 'path') ? props.data.url.path : {};
+            this.url.params = _.has(props.data.url, 'params') ? props.data.url.params : {};
+            this.data.children = [];
+            this.data.onClick = this.handleClick;
+        },
+        renderComponent: function() {
+            this.template.replace(/\[([\w\-\/]+)\]/gi, function(whole, match){
+                if (!_.isUndefined(this.buttons[match])){
+                    this.url.params['action'] = match;
+                    var url = UrlHelper.createUrl(this.url.path, this.url.params, this.data.row.id, this.data.rowKey)
+                    var buttonResult = (this.buttons[match](url, this.data.row));
+                    this.data.children.push(buttonResult);
+                    return buttonResult;
+                }
+                console.log('Template contains tag with mismatched callback', match);
+                return false;
+            }.bind(this))
+            return React.DOM.td(this.data);
+        }
+    });
+
+    /* -- Data Column -- */
+    var DataColumn = exports.DataColumn = React.createClass({
+        mixins: [ColumnMixin],
+        processData: function(data){
+            var ndata = this.handleCallback(data);
+            if (!this.hasCallback()){
+                ndata = this.numberToString(data);
+                ndata = this.booleanToString(data);
+            }
+            return ndata;
+        },
+        renderComponent: function() {
+            var data = this.props.data;
+            data.onClick = this.handleClick;
+            return React.DOM.td(data);
+        },
+    });
+
+    /* -- Unsafe Column -- */
+    var UnsafeColumn = exports.UnsafeColumn = React.createClass({
+        mixins: [ColumnMixin],
+        processData: function(data){
+            return this.handleCallback(data);
+        },
+        renderComponent: function() {
+            var data = this.props.data;
+            data.dangerouslySetInnerHTML = { __html: data.children };
+            data.children = undefined;
+            data.onClick = this.handleClick;
+            return React.DOM.td(data);
+        }
+    });
+/* */
+    Td = exports.Td = React.createClass({
+        getColumnType: function(type, data){
+            switch(type){
+                case 'ActionColumn':
+                    return (<ActionColumn ref="column" data={data} row={this.props.row} />);
+                case 'UnsafeColumn':
+                    return (<UnsafeColumn ref="column" data={data} row={this.props.row} />);
+                default:
+                    return (<DataColumn ref="column" data={data} row={this.props.row} />);
+            }
+        },
+        handleClick: function(e){
+            if (typeof this.props.data.handleClick !== 'undefined') {
+                return this.props.data.handleClick(e, this);
+            }
+        },
+        render: function() {
+            var columnProps = {
+                'data-column': this.props.column.key,
+                'row': this.props.row,
+                className: this.props.className,
+            };
+
+            // Attach any properties on the column to this Td object to allow things like custom event handlers
+            for (var key in this.props.column) {
+                if (key !== 'key' && key !== 'name') {
+                    columnProps[key] = this.props.column[key];
+                }
+            }
+            var data = this.props.data;
+            if (typeof(this.props.data) === 'undefined'){
+                data = this.props.children;
+            }
+            if (typeof(this.props.children) !== 'undefined') {
+                if (this.props.children instanceof Unsafe) {
+                    columnProps.dangerouslySetInnerHTML = { __html: this.props.children.toString() };
+                } else {
+                    columnProps.children = data;
+                }
+            }
+            return this.getColumnType(columnProps.type, columnProps);
+        }
+    });
+
+    /**
+     *  Tr Replacement for Working Reactable Column Types
+     */
+    Tr = exports.Tr = React.createClass({
+        statics: {
+            childNode: Td,
+            dataType: 'object'
+        },
+        getDefaultProps: function() {
+            var defaultProps = {
+                childNode: Td,
+                columns: [],
+                data: {}
+            };
+
+            return defaultProps;
+        },
+        render: function() {
+            var children = this.props.children || [];
+
+            if (
+                this.props.data &&
+                this.props.columns &&
+                typeof this.props.columns.map === 'function'
+            ) {
+                children = children.concat(this.props.columns.map(function(column, i) {
+                    if (this.props.data.hasOwnProperty(column.key)) {
+                        return <Td column={column} key={column.key} row={this.props.data}>{this.props.data[column.key]}</Td>;
+                    } else {
+                        return <Td column={column} key={column.key} row={this.props.data}/>;
+                    }
+                }.bind(this)));
+            }
+
+            // Manually transfer props
+            var props = filterPropsFrom(this.props);
+
+            return React.DOM.tr(props, children);
+        }
+    });
 
     return exports;
 }));
