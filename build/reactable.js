@@ -858,7 +858,10 @@
 
 
     /* --- VisionLink Column Type Alterations Here --- */
-    /* */
+    /** UrlHelper
+     * Provides some useful functionality behind getting the current base URL and the formation of URLs based on the
+     * base URL and parameters
+     */
     var UrlHelper = exports.UrlHelper = {
         getBaseUrl: function(){
             if (!root.location.origin) {
@@ -866,6 +869,9 @@
             }
             return root.location.origin;
         },
+        /**
+         * Very Primitive URL forming...
+         */
         createUrl: function(urlRaw, params, dataIndex, dataKey) {
             var base = this.getBaseUrl();
             if (base.substr(base.length - 1) !== '/') {
@@ -900,9 +906,9 @@
     /* */
     /**
     * ColumnMixin
-    *
-    * Props:
-    *      visible: determimes if the column is visible (true)
+    * Provides consistent functionality across all column types.
+    * Standard Props:
+    *      visible: determimes if the column is visible (true) .. Not yet completely implemented
     */
     var ColumnMixin = exports.ColumnMixin = {
         getDefaultColumnProps: function() {
@@ -952,7 +958,9 @@
             }
         }
     };
-    /* */
+    /** Button Helper
+     * A simple button callback factory
+     */
     var ButtonHelper = exports.ButtonHelper = {
         makeButtonCallback: function (tooltip, glyph) {
             return function (href, row) {
@@ -967,7 +975,15 @@
         }
     };
 
-    /* -- Action Column -- */
+    /** Action Column
+     * A column that allows you to add buttons and actions to a column via callback functions and a template
+     * for consistency in the rendering order. Callback functions should take two parameters, href and row, where
+     * href is a formatted url based on the column path specified and the row being an array containing all data
+     * associated with that row. These callbacks may render whatever you wish; a button, a link, etc. The only caveat
+     * here is that you should not be using this column type to render things like checkboxs or post data.
+     *
+     * @render a `td` DOM Object containing buttons or links based on the callbacks passed in and the template
+     */
     var ActionColumn = exports.ActionColumn = React.createClass({displayName: 'ActionColumn',
         mixins: [ColumnMixin],
         getDefaultProps: function() {
@@ -1022,7 +1038,13 @@
         }
     });
 
-    /* -- Data Column -- */
+    /**
+     * Data Column
+     * Basic column for data right out of the database. Handles Booleans as "True"/"False"
+     * and converts numbers to their string representation.
+     *
+     * @render a `td` DOM Object containing the formated cell contents
+     */
     var DataColumn = exports.DataColumn = React.createClass({displayName: 'DataColumn',
         mixins: [ColumnMixin],
         processData: function(data) {
@@ -1040,7 +1062,12 @@
         },
     });
 
-    /* -- Unsafe Column -- */
+    /** Unsafe Column
+     * A column that allows you to dangerously set the innerHTML of a cell. This column type will
+     * correctly handle booleans as "true"/"false" as well as numbers.
+     *
+     * @render a `td` DOM Object containing the dangerously set cell content
+     */
     var UnsafeColumn = exports.UnsafeColumn = React.createClass({displayName: 'UnsafeColumn',
         mixins: [ColumnMixin],
         processData: function(data) {
@@ -1054,7 +1081,9 @@
             return React.DOM.td(data);
         }
     });
-/* */
+    /** Replacement of standard Reactable Td
+     * Adds support for column type functionality
+     */
     Td = exports.Td = React.createClass({displayName: 'Td',
         getColumnType: function(type, data) {
             switch(type){
@@ -1094,8 +1123,8 @@
         }
     });
 
-    /**
-     *  Tr Replacement for Working Reactable Column Types
+    /** Replacement of standard Reactable Tr
+     * Adds support for column type functionality
      */
     Tr = exports.Tr = React.createClass({displayName: 'Tr',
         statics: {
