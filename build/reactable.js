@@ -863,45 +863,15 @@
      * base URL and parameters
      */
     var UrlHelper = exports.UrlHelper = {
-        getBaseUrl: function(){
+        getUrlOrigin: function(){
             if (!root.location.origin) {
                 root.location.origin = root.location.protocol+"//"+root.location.host+"/";
             }
             return root.location.origin;
         },
-        /**
-         * Very Primitive URL forming...
-         */
-        createUrl: function(urlRaw, params, dataIndex, dataKey) {
-            var base = this.getBaseUrl();
-            if (base.substr(base.length - 1) !== '/') {
-                base += '/';
-            }
-            if (_.isString(urlRaw)) {
-                base += urlRaw;
-            } else if (_.isObject(urlRaw)) {
-                var url = [urlRaw.feature, urlRaw.controller, urlRaw.action];
-                var value;
-                for (var index in url) {
-                    value = _.isUndefined(url[index]) ? '' : url[index] + '/';
-                    base += value;
-                }
-            }
-            if (base.substr(base.length - 1) !== '/') {
-                base += '/';
-            }
-            if (!_.isUndefined(params)) {
-                for (var key in params) {
-                    if (!_.isUndefined(params[key])) {
-                        base += key + '/' + params[key] + '/';
-                    }
-                }
-            }
-            if (!_.isUndefined(dataIndex)) {
-                base += (dataKey ? dataKey :'id')  + '/' + dataIndex + '/';
-            }
-            return base;
-        }
+        getUrlPathname: function() {
+            return root.location.pathname;
+        },
     };
     /* */
     /**
@@ -962,12 +932,12 @@
      * A simple button callback factory
      */
     var ButtonHelper = exports.ButtonHelper = {
-        makeButtonCallback: function (tooltip, glyph) {
-            return function (href, row) {
+        makeButtonCallback: function (tooltip, glyph, action) {
+            return function (row) {
                 return React.DOM.a(
                     {
                         'title': tooltip,
-                        'href': href,
+                        'href': Reactable.UrlHelper.getUrlPathname() + '/' + action + '/id/' + row.id,
                     },
                     React.DOM.span({className: 'glyphicon glyphicon-' + glyph + ' glyphicon-style-padded'})
                 );
@@ -993,9 +963,9 @@
                     'template': '[view] [update] [delete]',
                     'buttons':
                     {
-                        view: ButtonHelper.makeButtonCallback('View', 'eye-open'),
-                        update: ButtonHelper.makeButtonCallback('Update', 'pencil'),
-                        delete: ButtonHelper.makeButtonCallback('Delete', 'trash')
+                        view: ButtonHelper.makeButtonCallback('View', 'eye-open', 'view'),
+                        update: ButtonHelper.makeButtonCallback('Update', 'pencil', 'edit'),
+                        delete: ButtonHelper.makeButtonCallback('Delete', 'trash', 'delete')
                     }
                 }
             );
@@ -1023,17 +993,17 @@
             this.data.onClick = this.handleClick;
         },
         renderComponent: function() {
+            this.data.children = [];
             this.template.replace(/\[([\w\-\/]+)\]/gi, function(whole, match) {
                 if (!_.isUndefined(this.buttons[match])) {
-                    this.url.params['action'] = match;
-                    var url = UrlHelper.createUrl(this.url.path, this.url.params, this.data.row.id, this.data.rowKey)
-                    var buttonResult = (this.buttons[match](url, this.data.row));
+                    var buttonResult = this.buttons[match](this.data.row);
                     this.data.children.push(buttonResult);
                     return buttonResult;
                 }
-                console.log('Template contains tag with mismatched callback', match);
+                console.log('Template contains tag with no associated callback', match);
                 return false;
             }.bind(this))
+            console.log("Children", this.data.children);
             return React.DOM.td(this.data);
         }
     });
