@@ -120,6 +120,21 @@
         };
     }
 
+    // Deep clone helper function.  Very naive and can probably use some updates at some point.
+    function cloneDeep(obj) {
+        var newObj = {};
+
+        for (var i in obj) {
+            if (typeof(obj[i]) === 'object') {
+                newObj[i] = cloneDeep(obj[i]);
+            } else {
+                newObj[i] = obj[i];
+            }
+        }
+
+        return newObj;
+    }
+
     function Unsafe(content) {
         this.content = content;
     }
@@ -301,9 +316,9 @@
             ) {
                 children = children.concat(this.props.columns.map(function(column, i) {
                     if (this.props.data.hasOwnProperty(column.key)) {
-                        return Td({column: column, key: column.key}, this.props.data[column.key]);
+                        return React.createElement(Td, {column: column, key: column.key}, this.props.data[column.key]);
                     } else {
-                        return Td({column: column, key: column.key});
+                        return React.createElement(Td, {column: column, key: column.key});
                     }
                 }.bind(this)));
             }
@@ -373,14 +388,14 @@
 
     var Th = exports.Th = React.createClass({displayName: 'Th',
         render: function() {
-            return this.transferPropsTo(React.DOM.th(null, this.props.children));
+            return this.transferPropsTo(React.createElement("th", null, this.props.children));
         }
     });
 
     var FiltererInput = React.createClass({displayName: 'FiltererInput',
         render: function() {
             return (
-                React.DOM.input({type: "text", className: "reactable-filter-input", 
+                React.createElement("input", {type: "text", className: "reactable-filter-input", 
                     onKeyUp: function(){
                         this.props.onFilter(this.getDOMNode().value);
                     }.bind(this)})
@@ -395,9 +410,9 @@
             }
 
             return (
-                React.DOM.tr({className: "reactable-filterer"}, 
-                    React.DOM.td({colSpan: this.props.colSpan}, 
-                        FiltererInput({onFilter: this.props.onFilter})
+                React.createElement("tr", {className: "reactable-filterer"}, 
+                    React.createElement("td", {colSpan: this.props.colSpan}, 
+                        React.createElement(FiltererInput, {onFilter: this.props.onFilter})
                     )
                 )
             );
@@ -427,7 +442,7 @@
                 }
 
                 pageButtons.push(
-                    React.DOM.a({className: className, key: i, 
+                    React.createElement("a", {className: className, key: i, 
                        // create function to get around for-loop closure issue
                        onClick: (function(pageNum) {
                            return function() {
@@ -438,9 +453,9 @@
             }
 
             return (
-                React.DOM.tbody({className: "reactable-pagination"}, 
-                    React.DOM.tr(null, 
-                        React.DOM.td({colSpan: this.props.colSpan}, 
+                React.createElement("tbody", {className: "reactable-pagination"}, 
+                    React.createElement("tr", null, 
+                        React.createElement("td", {colSpan: this.props.colSpan}, 
                             pageButtons
                         )
                     )
@@ -482,7 +497,8 @@
                     }
                     */
 
-                    var childData = child.props.data || {};
+                    // Clone data here to prevent issues from object reuse
+                    var childData = cloneDeep(child.props.data) || {};
 
                     React.Children.forEach(child.props.children, function(descendant) {
                         // TODO
@@ -758,7 +774,7 @@
                     }
 
                     return (
-                        Tr({columns: columns, key: i, data: data})
+                        React.createElement(Tr, {columns: columns, key: i, data: data})
                     );
                 }.bind(this)));
             }
@@ -1058,11 +1074,11 @@
         getColumnType: function(type, data) {
             switch(type){
                 case 'ActionColumn':
-                    return (ActionColumn({ref: "column", data: data, row: this.props.row}));
+                    return (React.createElement(ActionColumn, {ref: "column", data: data, row: this.props.row}));
                 case 'UnsafeColumn':
-                    return (UnsafeColumn({ref: "column", data: data, row: this.props.row}));
+                    return (React.createElement(UnsafeColumn, {ref: "column", data: data, row: this.props.row}));
                 default:
-                    return (DataColumn({ref: "column", data: data, row: this.props.row}));
+                    return (React.createElement(DataColumn, {ref: "column", data: data, row: this.props.row}));
             }
         },
         render: function() {
@@ -1120,9 +1136,9 @@
             ) {
                 children = children.concat(this.props.columns.map(function(column, i) {
                     if (this.props.data.hasOwnProperty(column.key)) {
-                        return Td({column: column, key: column.key, row: this.props.data}, this.props.data[column.key]);
+                        return React.createElement(Td, {column: column, key: column.key, row: this.props.data}, this.props.data[column.key]);
                     } else {
-                        return Td({column: column, key: column.key, row: this.props.data});
+                        return React.createElement(Td, {column: column, key: column.key, row: this.props.data});
                     }
                 }.bind(this)));
             }

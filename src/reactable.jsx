@@ -120,6 +120,21 @@
         };
     }
 
+    // Deep clone helper function.  Very naive and can probably use some updates at some point.
+    function cloneDeep(obj) {
+        var newObj = {};
+
+        for (var i in obj) {
+            if (typeof(obj[i]) === 'object') {
+                newObj[i] = cloneDeep(obj[i]);
+            } else {
+                newObj[i] = obj[i];
+            }
+        }
+
+        return newObj;
+    }
+
     function Unsafe(content) {
         this.content = content;
     }
@@ -482,7 +497,8 @@
                     }
                     */
 
-                    var childData = child.props.data || {};
+                    // Clone data here to prevent issues from object reuse
+                    var childData = cloneDeep(child.props.data) || {};
 
                     React.Children.forEach(child.props.children, function(descendant) {
                         // TODO
